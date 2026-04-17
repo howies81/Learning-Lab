@@ -1,5 +1,6 @@
 import streamlit as st
-from web_app_barcode_scanner import run_barcode_scanner
+from web_app_barcode_scanner import get_barcode_from_scanner
+from local_food_database import check_local_database
 
 # This forces the app to refresh every 0.5 seconds to check for a scan
 from streamlit_autorefresh import st_autorefresh
@@ -11,25 +12,40 @@ st.set_page_config(page_title="Sodium Scanner T&T")
 st.title("🛒 Sodium Scanner Tool")
 st.write("Let's check the sodium content of your Caribbean groceries.")
 
-# 1. Initialize the memory bank if it doesn't exist
+# Initialize the memory bank if it doesn't exist
 if "last_barcode" not in st.session_state:
     st.session_state.last_barcode = None
 
-# Call the scanner function from the other file
-barcode_result = run_barcode_scanner()
+# Determine if the scanner should be active
+# If we have a barcode, we 'pause' the scanner logic
+scanner_active = st.session_state.last_barcode is None
 
-if barcode_result.video_processor:
-    barcode_found = barcode_result.video_processor.found_barcode
+# Call the scanner function from the web app scanner file
+# once scanner should be active
+if scanner_active:
+    barcode_result = get_barcode_from_scanner()
+     
 
-    if barcode_found:
-        st.session_state.last_barcode = barcode_found
-
-if st.session_state.last_barcode:
-    st.success(f"Captured Barcode: {st.session_state.last_barcode}")
-    
-        # NEXT STEP: 
-        # check_csv_for_sodium(barcode_result)
-    if st.button("Scan Another Item"):
+    # Check to see if a barcode has been found
+    if barcode_result:
+        # Store result in last_barcode child of Streamlit library
+        st.session_state.last_barcode = barcode_result
         st.rerun()
+
 else:
-    st.info("Looking for a barcode... (Hold it steady!)")
+    if st.session_state.last_barcode:
+        st.success(f"Captured Barcode: {st.session_state.last_barcode}")
+        # NEXT STEP: check if csv is available. 
+        # If so, check csv for sodium content according to barcode
+        check_local_database(st.session_state.last_barcode)
+
+
+        if st.button("Scan Another Item"):
+            st.session_state.last_barcode = None
+            barcode_result = None
+            st.rerun()
+            
+    
+    else:
+        st.info("Looking for a barcode... (Hold it steady!)")
+

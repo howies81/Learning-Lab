@@ -32,8 +32,8 @@ def run_barcode_scanner(key="scanner"):
         media_stream_constraints={
             "video": {
                 "facingMode": "environment", # Tells phones to use the BACK camera
-                #"width": {"ideal": 640},     # Keeps the "spreadsheet" size manageable
-                #"height": {"ideal": 480}
+                "width": {"ideal": 640},     # Keeps the "spreadsheet" size manageable
+                "height": {"ideal": 480}
             },
             "audio": False # We don't need audio for barcodes
         },
@@ -42,4 +42,20 @@ def run_barcode_scanner(key="scanner"):
 
     if ctx:
         return ctx
+    return None
+
+def get_barcode_from_scanner():
+    """
+    Triggers the scanner and attempts to capture a barcode.
+    Returns the barcode string if found, otherwise None.
+    """
+    # 1. Call the engine
+    barcode_result = run_barcode_scanner()
+
+    # 2. Extract the data if the engine is 'live'
+    if barcode_result and barcode_result.video_processor:
+        barcode_found = barcode_result.video_processor.found_barcode
+        if barcode_found:
+            return barcode_found
+            
     return None
