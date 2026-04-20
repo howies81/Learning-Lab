@@ -1,11 +1,8 @@
 import streamlit as st
 from web_app_barcode_scanner import get_barcode_from_scanner
 from lookup_manager import fetch_product_data
-
-# This forces the app to refresh every 0.5 seconds to check for a scan
 from streamlit_autorefresh import st_autorefresh
-st_autorefresh(interval=500, key="datarefresh")
-# ---------------------
+
 
 st.set_page_config(page_title="Sodium Scanner T&T")
 
@@ -35,26 +32,27 @@ if st.session_state.last_barcode:
     product_info = fetch_product_data(st.session_state.last_barcode)
     
     
-    if isinstance(product_info, dict): # 2. Check if we actually got a Dictionary (Success)
+    if product_info['status'] == "success": # 2. Check if we actually got a Dictionary (Success)
+        product = product_info['data']
         text_display = f"""
-        ### {product_info['barcode']}
-        **Category:** {product_info['product_type']}
-        **Brand:** {product_info['brand']}
+        ### {product['barcode']}
+        **Category:** {product['product_type']}
+        **Brand:** {product['brand']}
 
         ---
         #### 📊 Nutritional Profile
-        **Sodium:** {product_info['sodium_mg']}mg
-        **Calories:** {product_info['calories']}kcal
+        **Sodium:** {product['sodium_mg']}mg
+        **Calories:** {product['calories']}kcal
         ---
         """
         st.markdown(text_display)
-    elif product_info == "ITEM NOT FOUND IN DATABASE!":
+    elif product_info["status"] == "not_found":
         st.warning("⚠️ Product not found locally.")
         st.info("Proceeding to check the OpenFoodFacts global database...")
         # This triggers if BOTH local and global fail
         st.error("Product could not be identified.")
 
-    elif product_info == "FILE CANNOT BE FOUND!":
+    elif product_info["status"] == "file_error":
         st.error("Local Database cannot be found. Contact the system administrator")
 
     if st.button("Scan Another Item"):
