@@ -28,29 +28,28 @@ def show_manual_entry_form(barcode):
         submitted = st.form_submit_button("Submit Product")
         
         if submitted:
-            # Map inputs to your 14 Google Sheet headers
-            new_entry = {
-                "barcode": barcode,
-                "product_type": product_name,
-                "is_liquid": is_liquid,
-                "brand": brand,
-                "weight_g": container_size if not is_liquid else 0,
-                "amount_mL": container_size if is_liquid else 0,
-                "serving_weight_g": serving_size if not is_liquid else 0,
-                "serving_amt_mL": serving_size if is_liquid else 0,
-                #"product_type": "Liquid" if is_liquid else "Solid",
-                "sodium_mg": sodium,
-                "sugars_g": sugars, 
-                "added_sugars_g": sugars if added_sugars else 0, 
-                "fat_g": fats, 
-                "sat_fat_g": sat_fat, 
-                "trans_fat_g": trans_fat,
-                "calories": calories,
-                
-                # Fill remaining columns with defaults/zeros
-                
-                
-                
-               
-            }
-            save_to_pending(new_entry)
+            if brand and product_name:
+                # Map inputs to your 14 Google Sheet headers
+                new_entry = {
+                    "barcode": barcode,
+                    "product_type": product_name,
+                    "is_liquid": is_liquid,
+                    "brand": brand,
+                    "weight_g": container_size if not is_liquid else 0,
+                    "amount_mL": container_size if is_liquid else 0,
+                    "serving_weight_g": serving_size if not is_liquid else 0,
+                    "serving_amt_mL": serving_size if is_liquid else 0,
+                    #"product_type": "Liquid" if is_liquid else "Solid",
+                    "sodium_mg": sodium,
+                    "sugars_g": sugars, 
+                    "added_sugars_g": sugars if added_sugars else 0, 
+                    "fat_g": fats, 
+                    "sat_fat_g": sat_fat, 
+                    "trans_fat_g": trans_fat,
+                    "calories": calories,
+                    
+                    # Fill remaining columns with defaults/zeros
+                }
+                save_to_pending(new_entry)
+            else:
+                st.error("Please provide both a Brand and Product Name so data can be verified.")

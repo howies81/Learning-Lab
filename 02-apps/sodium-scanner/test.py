@@ -45,9 +45,7 @@ if st.session_state.last_barcode:
 
         check_local_db_success = st.empty()
         with check_local_db_success.container():
-           #info_display(product)
-
-            #Call function to process sodiun and calories data
+          #Call function to process sodiun and calories data
            display_sodium_results(product_info)
 
         # display warning label if necessary
@@ -79,7 +77,8 @@ if st.session_state.last_barcode:
         global_db_open.info("Proceeding to check the OpenFoodFacts global database...")
 
         # Attempt to connect to global database
-        global_info = check_global_database(st.session_state.last_barcode)
+        with st.spinner("Checking global database... this may take a moment"):
+            global_info = check_global_database(st.session_state.last_barcode)
 
         #If successful in connecting to database AND finding product
         if global_info["status"] == "success":
@@ -89,9 +88,6 @@ if st.session_state.last_barcode:
             global_conn_success.success("Connected to global database")
             check_global_db_success = st.empty()
             with check_global_db_success.container():
-                st.info("Getting sodium and data calories here")
-                #Call function to process sodium and calories data from global database,
-
                 display_sodium_results(global_info)
                 save_new_product_to_cloud(global_info["data"])
 
@@ -112,8 +108,9 @@ if st.session_state.last_barcode:
             handle_global_failure("Product not found in global database.", "not_found_not_found")
             
     
-    #If local CSV file could NOT be found
-    elif product_info["status"] == "file_error":
+    #If Google Sheets file could NOT be found
+    elif product_info["status"] in ["db_access_error", "db_conn_error", 
+                                 "barcode_error", "cloud_conn_error"]:
         local_db_not_found = st.empty()
         global_db_open = st.empty()
         local_db_not_found.error("Local Database cannot be found.")
@@ -130,8 +127,6 @@ if st.session_state.last_barcode:
             global_conn_success.success("Connected to global database")
             check_global_db_success = st.empty()
             with check_global_db_success.container():
-                st.info("Getting sodium and calories data here")
-
                 display_sodium_results(global_info)
                 cloud_save_flag = save_new_product_to_cloud(global_info["data"])
                 if cloud_save_flag is False:
@@ -156,8 +151,8 @@ if st.session_state.last_barcode:
 
     if st.button("Scan Another Item"):
             st.session_state.last_barcode = None
-            barcode_result = None
-            st.rerun()
+            #barcode_result = None
+            st.rerun(scope="app")
             
     
     

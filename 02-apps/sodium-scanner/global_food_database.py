@@ -7,7 +7,7 @@ def check_global_database(barcode):
     url = f"https://world.openfoodfacts.net/api/v2/product/{barcode}.json"
 
     try:
-        response = requests.get(url, timeout= 5) # check connection status. 200 is good, 404 is bad
+        response = requests.get(url, timeout= 10) # check connection status. 200 is good, 404 is bad
     except requests.exceptions.RequestException: #If error occurs, return API error dictionary
         return {"status": "api_error", "data": None} 
 

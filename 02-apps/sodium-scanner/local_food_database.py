@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import datetime
 from streamlit_gsheets import GSheetsConnection
 
 """ @st.cache_data(ttl=300)  # refresh cache every 5 minutes
@@ -59,9 +60,18 @@ def save_new_product_to_cloud(new_data):
         if not str(new_data['barcode']).startswith("'"):
             new_data['barcode'] = f"'{new_data['barcode']}"
             
-        # 3. Create DataFrame and Append
+        # 3. Create DataFrame and Append, adding metadata in the last 3 columns
         new_row = pd.DataFrame([new_data])
+        new_row['data_source'] = 'Open Food Facts API'
+        new_row['verified_by'] = 'System_Auto'
+        new_row['verification_date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         updated_df = pd.concat([existing_df, new_row], ignore_index=True)
+
+        # 2. Fill the empty 'NaN' spots for the old rows
+        # This ensures your 'verified_by' column stays consistent
+        updated_df['verified_by'] = updated_df['verified_by'].fillna('Legacy_Entry')
+        updated_df['data_source'] = updated_df['data_source'].fillna('Manual_Batch_1')
+        updated_df['verification_date'] = updated_df['verification_date'].fillna('2026-01-01 00:00:00')
         
         # 4. Update the Sheet
         conn.update(data=updated_df)
@@ -84,6 +94,9 @@ def save_to_pending(new_data):
             new_data['barcode'] = f"'{new_data['barcode']}"
             
         new_row = pd.DataFrame([new_data])
+        new_row['data_source'] = 'Crowdsourced'
+        new_row['verified_by'] = 'To_be_verified'
+        new_row['verification_date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         updated_df = pd.concat([existing_df, new_row], ignore_index=True)
         
         conn.update(worksheet="Pending", data=updated_df)
