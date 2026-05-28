@@ -15,14 +15,18 @@ def check_cloud_database(barcode):
 
     """Searches the Google Sheet for a barcode."""
     try:
-        df = conn.read(ttl="5m")
+        df = conn.read(ttl="5m", dtype={"barcode": str})
         # Convert barcode to string and strip spaces to ensure a match
-        barcode_str = str(barcode).strip()
-        result = df[df['barcode'].astype(str).str.replace("'", "", regex=False) == barcode_str]
+        barcode_str = "BC-" + str(barcode).strip()
+        #print(df['barcode'])
+        df['barcode'] = df['barcode'].astype(str).str.strip()
+        result = df[df['barcode'] == barcode_str] # .astype(str).str.replace("'", "", regex=False)
         
         if not result.empty:
             # Return the first match as a dictionary
+            #print("Full")
             return {"status": "success", "data": result.iloc[0].to_dict()}
+        #print("Empty")
         return {"status": "not_found", "data": None}
     
     except Exception as e:
@@ -55,13 +59,26 @@ def save_new_product_to_cloud(new_data):
     try:
         # 1. Fetch current data (without cache to avoid overwriting)
         existing_df = conn.read()
+
+          # --- NEW DUPLICATE CHECK START ---
+        # Normalize the incoming barcode and existing barcodes for a fair comparison
+        incoming_barcode = "BC-" + str(new_data['barcode']).strip()
+
+        if not existing_df.empty:
+            existing_barcodes = existing_df['barcode'].astype(str).str.strip().tolist()
+            if incoming_barcode in existing_barcodes:
+                return True
+            # --- NEW DUPLICATE CHECK END ---
+            
         
         # 2. Add the ' quote to barcode for safe Sheet storage
-        if not str(new_data['barcode']).startswith("'"):
-            new_data['barcode'] = f"'{new_data['barcode']}"
+        # if not str(new_data['barcode']).startswith("'"):
+            #new_data['barcode'] = f"'{new_data['barcode']}" 
             
         # 3. Create DataFrame and Append, adding metadata in the last 3 columns
+        new_data['barcode'] = incoming_barcode
         new_row = pd.DataFrame([new_data])
+        #new_row['barcode'] = new_row['barcode'].astype(str).apply(lambda x: "BC-" + x.strip())
         new_row['data_source'] = 'Open Food Facts API'
         new_row['verified_by'] = 'System_Auto'
         new_row['verification_date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -73,6 +90,11 @@ def save_new_product_to_cloud(new_data):
         updated_df['data_source'] = updated_df['data_source'].fillna('Manual_Batch_1')
         updated_df['verification_date'] = updated_df['verification_date'].fillna('2026-01-01 00:00:00')
         
+        # Safety check before writing
+        if updated_df.empty or len(updated_df.columns) == 0:
+            print("Safety check failed: DataFrame is empty, aborting update")
+            return False
+
         # 4. Update the Sheet
         conn.update(data=updated_df)
         
@@ -90,15 +112,24 @@ def save_to_pending(new_data):
     try:
         existing_df = conn.read(worksheet="Pending")
         
-        if not str(new_data['barcode']).startswith("'"):
-            new_data['barcode'] = f"'{new_data['barcode']}"
-            
+        """ if not str(new_data['barcode']).startswith("'"):
+            new_data['barcode'] = f"'{new_data['barcode']}" """
+        #print(new_data['barcode'])
+        new_data['barcode'] = str(new_data['barcode']).strip()
         new_row = pd.DataFrame([new_data])
+        #new_row['barcode'] = new_row['barcode'].astype(str).apply(lambda x: "BC-" + x.strip())
+        #print(new_row['barcode'])
         new_row['data_source'] = 'Crowdsourced'
         new_row['verified_by'] = 'To_be_verified'
         new_row['verification_date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         updated_df = pd.concat([existing_df, new_row], ignore_index=True)
         
+        # Safety check before writing
+        if updated_df.empty or len(updated_df.columns) == 0:
+            print("Safety check failed: DataFrame is empty, aborting update")
+            return False
+
+
         conn.update(worksheet="Pending", data=updated_df)
         st.cache_data.clear()
         return True

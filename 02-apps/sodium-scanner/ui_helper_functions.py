@@ -12,14 +12,14 @@ def handle_global_failure(error_message, button_key_suffix):
                               Do you want to manually enter nutritional data?")
     
     with button_placeholder.container():
-        col1, col2 = st.columns(2)
-        with col1:
+        col1, col2, col3 = st.columns([4,1,1])
+        with col2:
             if st.button("Yes", key=f"yes_{button_key_suffix}"):
                 error_placeholder.empty()
                 choice_placeholder.empty()
                 # Open manual entry form
                 show_manual_entry_form(st.session_state.last_barcode)
-        with col2:
+        with col3:
             if st.button("No", key=f"no_{button_key_suffix}"):
                 error_placeholder.empty()
                 choice_placeholder.empty()
@@ -34,46 +34,84 @@ def display_sodium_results(item):
     # save_new_product_to_cloud(global_info)
 
     if "INSUFFICIENT DATA" in PAHO_warning:
-        no_data_display = st.markdown(f"""
-    <div style="background-color:red; color:white; padding:10px; 
-                border-radius:5px; text-align:center; font-weight:bold; 
-                margin-bottom:10px; border: 2px solid white;">
-        INSUFFICIENT <br> 
-        DATA
-    </div>
-    """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style="
+            background-color: red;
+            color: white;
+            width: 150px;
+            height: 150px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: Arial;
+            font-size: 16px;
+            text-align: center;
+            margin: auto;">
+            INSUFFICIENT<br>DATA!
+        </div>
+        """, unsafe_allow_html=True)
+    
         
         choice_question = f"""
         Are you willing to input any available nutrition data for this product?
         """
-        choice_question_blk = st.markdown(choice_question)
-        column_1, column_2 = st.columns(2)
-        with column_1:
-            if st.button("Yes", key="yes_choice"):
-                choice_question_blk.empty()
-                show_manual_entry_form(st.session_state.last_barcode)
-                #show_manual_entry_form(barcode)
-        with column_2:
-            if st.button("No", key="no_choice"):
-                choice_question_blk.empty()
+        change_data_choice(choice_question)
+
     elif "HIGH IN SODIUM" in PAHO_warning:
         # Custom CSS for the "Black Octagon" look (simulated with black error box)
-        warning_display = st.markdown(f"""
-        <div style="background-color:black; color:white; padding:10px; 
-                border-radius:5px; text-align:center; font-weight:bold; 
-                margin-bottom:10px; border: 2px solid white;">
-        HIGH IN <br>
-        SODIUM
+        st.markdown("""
+        <div style="
+            background-color: black;
+            color: white;
+            width: 150px;
+            height: 150px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: Arial;
+            font-size: 16px;
+            text-align: center;
+            margin: auto;">
+            HIGH IN<br>SODIUM
         </div>
         """, unsafe_allow_html=True)
     else:
-        safe_display = st.markdown(f"""
-        <div style="background-color:green; color:white; padding:10px; 
-                border-radius:5px; text-align:center; font-weight:bold; 
-                margin-bottom:10px; border: 2px solid white;">
-        ✅ <br> SODIUM OK
+        st.markdown("""
+        <div style="
+            background-color: rgb(0, 255, 155);
+            color: white;
+            width: 150px;
+            height: 150px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: Arial;
+            font-size: 16px;
+            text-align: center;
+            margin: auto;">
+            ✅<br>SODIUM OK
         </div>
         """, unsafe_allow_html=True)
     cols = st.columns(2)
     cols[0].metric("Sodium", f"{data.get('sodium_mg', 'N/A')} mg")
     cols[1].metric("Calories", f"{data.get('calories', 'N/A')} kcal")
+
+@st.dialog("Input Nutrition Data?")
+def change_data_choice(question):
+    st.markdown(question)
+    col_1, col_2, col_3 = st.columns([3, 1, 1])
+    with col_2.container():
+        if st.button("Yes", key="yes_choice"):
+            st.session_state.input_form = True
+            st.rerun(scope='app')
+    with col_3.container():
+        if st.button("No", key="no_choice"):
+            st.rerun()
+
+

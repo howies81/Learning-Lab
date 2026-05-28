@@ -1,11 +1,12 @@
 import streamlit as st
 from local_food_database import save_to_pending
 
+@st.dialog("Add Product Data!")
 def show_manual_entry_form(barcode):
     """
     Displays a Streamlit form for users to contribute missing data.
     """
-    st.info(f"Barcode {barcode} not found. Help us by adding it to the database!")
+    st.markdown(f"Barcode {barcode} not found. Help us by adding it to the database!")
     
     with st.form("add_product_form", clear_on_submit=True):
         brand = st.text_input("Brand Name")
@@ -19,11 +20,11 @@ def show_manual_entry_form(barcode):
             calories = st.number_input("Calories per serving", min_value=0, step=1)
             serving_size = st.number_input("Serving Size of Food Item (g or mL)", min_value=1)
             container_size = st.number_input("Container Size of Food Item (g or mL)", min_value=1)
-            sugars = st.number_input("Sugar content per serving of Food Item (g)", min_value=1)
+            sugars = st.number_input("Sugar content per serving of Food Item (g)", min_value=0)
             added_sugars = st.toggle("Is the sugar content added sugar?", value=False)
-            fats = st.number_input("Fat content per serving of Food Item (g)", min_value=1)
-            sat_fat = st.number_input("Saturated fat content per serving of Food Item (g)", min_value=1)
-            trans_fat = st.number_input("Trans fat content per serving of Food Item (g)", min_value=1)
+            fats = st.number_input("Fat content per serving of Food Item (g)", min_value=0)
+            sat_fat = st.number_input("Saturated fat content per serving of Food Item (g)", min_value=0)
+            trans_fat = st.number_input("Trans fat content per serving of Food Item (g)", min_value=0)
 
         submitted = st.form_submit_button("Submit Product")
         
@@ -31,7 +32,7 @@ def show_manual_entry_form(barcode):
             if brand and product_name:
                 # Map inputs to your 14 Google Sheet headers
                 new_entry = {
-                    "barcode": barcode,
+                    "barcode": "BC-" + str(barcode),
                     "product_type": product_name,
                     "is_liquid": is_liquid,
                     "brand": brand,
@@ -51,5 +52,6 @@ def show_manual_entry_form(barcode):
                     # Fill remaining columns with defaults/zeros
                 }
                 save_to_pending(new_entry)
+                st.rerun()
             else:
-                st.error("Please provide both a Brand and Product Name so data can be verified.")
+                st.markdown("Please provide both a Brand and Product Name so data can be verified.")

@@ -1,6 +1,6 @@
 import streamlit as st
 from web_app_barcode_scanner import get_barcode_from_scanner
-from ui_helper_functions import handle_global_failure, display_sodium_results
+from ui_helper_functions import handle_global_failure, display_sodium_results, change_data_choice
 from local_food_database import check_cloud_database, save_new_product_to_cloud
 from streamlit_autorefresh import st_autorefresh
 from global_food_database import check_global_database
@@ -16,6 +16,8 @@ st.write("Let's check the sodium content of your Caribbean groceries.")
 # Initialize the memory bank if it doesn't exist
 if "last_barcode" not in st.session_state:
     st.session_state.last_barcode = None
+if "input_form" not in st.session_state:
+    st.session_state.input_form = False
 
 # --- FRAGMENT AREA: Only this part refreshes every 500ms ---
 @st.fragment
@@ -31,6 +33,10 @@ def scanner_section():
 
 # Call the fragmented scanner
 scanner_section()
+
+if st.session_state.input_form:
+    st.session_state.input_form = False
+    show_manual_entry_form(st.session_state.last_barcode)
 
 if st.session_state.last_barcode:
     #First we check the local database
@@ -56,16 +62,18 @@ if st.session_state.last_barcode:
             Is the information about this product correct?
             """
             st.markdown(choice_question)
-            column_1, column_2 = st.columns(2)
-            with column_1:
-                if st.button("Yes", key="yes_choice"):
+            column_1, column_2, column_3 = st.columns([3, 1, 1])
+            with column_2:
+                if st.button("Yes", key="yes_success"):
                     st.info("Thank You!")
                     #check_local_db_success.empty()
                     #Open manual input form
-            with column_2:
-                if st.button("No", key="no_choice"):
+            with column_3:
+                if st.button("No", key="no_success"):
                     check_local_db_success.empty()
-                    show_manual_entry_form(st.session_state.last_barcode)
+                    prompt_question = "Do you want to input the correct data for verification?"
+                    change_data_choice(prompt_question)
+                    
         
     #If product was not found in local CSV database file"""
 
@@ -99,13 +107,21 @@ if st.session_state.last_barcode:
         # else if error occurred in attempt to connect to API
         elif global_info["status"] in ["api_error", "parse_error"]:
              #Placeholders for error messages
-             handle_global_failure("An unexpected error occurred while connecting to\
-                                    global database.", "api_error_not_found")
+            prod_not_found_locally.empty()
+            global_db_open.empty()
+            handle_global_failure_holder = st.empty()
+            with handle_global_failure_holder.container():
+                handle_global_failure("An unexpected error occurred while connecting to\
+                                global database.", "api_error_not_found")
              
         
         #else if good connection to API but product could not be found in database
         else:
-            handle_global_failure("Product not found in global database.", "not_found_not_found")
+            prod_not_found_locally.empty()
+            global_db_open.empty()
+            handle_global_failure_holder = st.empty()
+            with handle_global_failure_holder.container():
+                handle_global_failure("Product not found in global database.", "not_found_not_found")
             
     
     #If Google Sheets file could NOT be found
@@ -151,6 +167,7 @@ if st.session_state.last_barcode:
 
     if st.button("Scan Another Item"):
             st.session_state.last_barcode = None
+            st.session_state.input_form = False
             #barcode_result = None
             st.rerun(scope="app")
             

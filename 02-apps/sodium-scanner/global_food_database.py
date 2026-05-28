@@ -72,7 +72,7 @@ def check_global_database(barcode):
         return {
             "status": "success",
             "data": {
-                "barcode": barcode,
+                "barcode": str(barcode),
                 "product_type": product_type,
                 "is_liquid": is_liquid,
                 "brand": brand,
