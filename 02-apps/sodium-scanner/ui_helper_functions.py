@@ -102,16 +102,17 @@ def display_sodium_results(item):
     cols[0].metric("Sodium", f"{data.get('sodium_mg', 'N/A')} mg")
     cols[1].metric("Calories", f"{data.get('calories', 'N/A')} kcal")
 
-@st.dialog("Input Nutrition Data?")
+#@st.dialog("Input Nutrition Data?")
 def change_data_choice(question):
     st.markdown(question)
     col_1, col_2, col_3 = st.columns([3, 1, 1])
     with col_2.container():
-        if st.button("Yes", key="yes_choice"):
-            st.session_state.input_form = True
-            st.rerun(scope='app')
-    with col_3.container():
-        if st.button("No", key="no_choice"):
+        if st.button("Yes, input data", help="Click this button to input data in form"):
+            st.session_state.current_screen = "MANUAL_FORM"
             st.rerun()
+    with col_3.container():
+        if st.button("No, leave alone", help="Leave as is"):
+            st.info("Thank you!")
+        
 
 

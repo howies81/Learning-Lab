@@ -1,16 +1,16 @@
 import streamlit as st
 from local_food_database import save_to_pending
 
-@st.dialog("Add Product Data!")
+#@st.dialog("Add Product Data!")
 def show_manual_entry_form(barcode):
     """
     Displays a Streamlit form for users to contribute missing data.
     """
     st.markdown(f"Barcode {barcode} not found. Help us by adding it to the database!")
     
-    with st.form("add_product_form", clear_on_submit=True):
+    with st.form("add_product_form", clear_on_submit=False):
         brand = st.text_input("Brand Name")
-        product_name = st.text_input("Product Name (e.g. Tomato Soup)")
+        product_type = st.text_input("Product Name (e.g. Tomato Soup)")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -29,11 +29,11 @@ def show_manual_entry_form(barcode):
         submitted = st.form_submit_button("Submit Product")
         
         if submitted:
-            if brand and product_name:
+            if brand and product_type:
                 # Map inputs to your 14 Google Sheet headers
                 new_entry = {
                     "barcode": "BC-" + str(barcode),
-                    "product_type": product_name,
+                    "product_type": product_type,
                     "is_liquid": is_liquid,
                     "brand": brand,
                     "weight_g": container_size if not is_liquid else 0,
@@ -51,7 +51,19 @@ def show_manual_entry_form(barcode):
                     
                     # Fill remaining columns with defaults/zeros
                 }
-                save_to_pending(new_entry)
-                st.rerun()
+                db_success = save_to_pending(new_entry)
+                if db_success:
+                    return True
+                else:
+                    # Connection failed! Show error on screen.
+                    # Because clear_on_submit=False, their typed text stays 
+                    # safely inside the fields!
+
+                    st.error("📡 Cloud Database Connection Timeout. Please check your internet\
+                              connection and try clicking Submit again.")
+                    return False  # Keeps the user locked on the manual form screen
+                
             else:
                 st.markdown("Please provide both a Brand and Product Name so data can be verified.")
+                return False
+                
