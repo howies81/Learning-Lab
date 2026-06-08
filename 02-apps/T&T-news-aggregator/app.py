@@ -8,27 +8,26 @@ st.set_page_config(
     page_title="TT News Hub",
     page_icon="🇹🇹",
     layout="wide",
-    initial_sidebar_state="expanded"
 )
 
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;600&display=swap');
- 
+
 /* Global */
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif;
 }
- 
+
 /* Hide default Streamlit header chrome */
 #MainMenu, footer, header {visibility: hidden;}
- 
+
 /* App background */
 .stApp {
     background-color: #F5F0E8;
 }
- 
+
 /* Masthead */
 .masthead {
     background-color: #1A1A1A;
@@ -61,7 +60,7 @@ html, body, [class*="css"] {
     border-top: 1px solid #333;
     margin: 1rem 0 0.5rem 0;
 }
- 
+
 /* Section label */
 .section-label {
     font-family: 'Oswald', sans-serif;
@@ -74,7 +73,7 @@ html, body, [class*="css"] {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
- 
+
 /* Source badge */
 .source-badge {
     display: inline-block;
@@ -88,7 +87,7 @@ html, body, [class*="css"] {
     border-radius: 2px;
     margin-bottom: 0.4rem;
 }
- 
+
 /* News card */
 .news-card {
     background: #FFFFFF;
@@ -118,13 +117,13 @@ html, body, [class*="css"] {
     color: #888;
     margin-top: 0.35rem;
 }
- 
+
 /* Source filter pills */
 .stMultiSelect span {
     background-color: #C8102E !important;
     color: white !important;
 }
- 
+
 /* Stats bar */
 .stats-bar {
     background: #1A1A1A;
@@ -139,57 +138,44 @@ html, body, [class*="css"] {
 }
 </style>
 """, unsafe_allow_html=True)
- 
+
 # ── Masthead ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="masthead">
-    <div class="masthead-title"> TT News Hub</div>
+    <div class="masthead-title"><span class="masthead-flag">🇹🇹</span> TT News Hub</div>
     <div class="masthead-sub">Trinidad &amp; Tobago · Local News Aggregator</div>
     <hr class="masthead-rule">
 </div>
 """, unsafe_allow_html=True)
 
-
-application_path = os.getcwd()
-year_month_day = datetime.today().strftime("%Y-%m-%d")
-
-
-st.subheader("Your centralized dashboard for local current affairs, sports, opinion and\
-             media updates.")
-
-
-#Look at the folder and find all your archived news files
-data_dir = os.path.join(os.getcwd(),"data")
+# ── Load archive files ────────────────────────────────────────────────────────
+application_path = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(application_path, "data")
 
 if os.path.exists(data_dir):
     all_files = os.listdir(data_dir)
-    csv_archives = [f for f in all_files if f.startswith("trinidad_news_") and f.endswith(".csv")]
-    csv_archives.sort(reverse=True)
-
-    # Make a list of the dates from the names of the archived news files, starting with the 
-    #latest date
-    date_options = [f for f in csv_archives]
-    date_options = [f.replace("trinidad_news_","") for f in date_options]
-    date_options = [f.replace(".csv","") for f in date_options]
+    csv_archives = sorted(
+        [f for f in all_files if f.startswith("trinidad_news_") and f.endswith(".csv")],
+        reverse=True
+    )
+    date_options = [f.replace("trinidad_news_", "").replace(".csv", "") for f in csv_archives]
 else:
-    date_options =[]
+    date_options = []
 
 # ── Controls (inline, no sidebar) ────────────────────────────────────────────
 col_date, col_filter = st.columns([1, 2])
- 
+
 with col_date:
     file_selected = st.selectbox(
         "📅 Select date:",
         options=date_options,
     )
 
+# ── Main content ──────────────────────────────────────────────────────────────
 if file_selected:
     file_name = f"trinidad_news_{file_selected}.csv"
-    final_path_int = os.path.join(application_path, "data")
-    final_path = os.path.join(final_path_int, file_name)
+    final_path = os.path.join(data_dir, file_name)
     news_df = pd.read_csv(final_path)
-
-    st.subheader(f"📰 Headlines for {file_selected}")
 
     # Source filter
     sources = sorted(news_df["news_source"].unique().tolist())
@@ -199,9 +185,9 @@ if file_selected:
             options=sources,
             default=sources,
         )
- 
+
     filtered_df = news_df[news_df["news_source"].isin(selected_sources)]
- 
+
     # Stats bar
     st.markdown(f"""
     <div style="background:#1A1A1A;color:#F5F0E8;padding:0.6rem 1.2rem;
@@ -213,19 +199,19 @@ if file_selected:
     </div>
     """, unsafe_allow_html=True)
 
-     # Group by source
+    # Group by source
     for source in selected_sources:
         source_df = filtered_df[filtered_df["news_source"] == source]
         if source_df.empty:
             continue
- 
+
         st.markdown(f'<div class="section-label">{source}</div>', unsafe_allow_html=True)
- 
+
         for _, row in source_df.iterrows():
             title = row.get("news_title", "No title")
             link = row.get("news_link", "#")
             pub_date = row.get("news_publish_date", "")
- 
+
             st.markdown(f"""
             <div class="news-card">
                 <div class="source-badge">{source}</div><br>
@@ -233,13 +219,8 @@ if file_selected:
                 <div class="news-meta">🕐 {pub_date}</div>
             </div>
             """, unsafe_allow_html=True)
- 
+
         st.markdown("<br>", unsafe_allow_html=True)
- 
+
 elif not date_options:
-    st.info("No news archives found.")
-
-   
-
-
-
+    st.info("No news archives found. Run `tt-news-rss-feeds.py` to fetch today's headlines.")

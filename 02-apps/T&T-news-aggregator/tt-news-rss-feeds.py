@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 
-application_path = os.getcwd()
+application_path = os.path.dirname(os.path.abspath(__file__))
 year_month_day = datetime.today().strftime("%Y-%m-%d")
 
 
