@@ -27,7 +27,7 @@ jobs:
 
       - name: Run news fetcher
         run: |
-          python apps/TT-News-Aggregator/tt-news-rss-feeds.py
+          python 02-apps/T&T-News-Aggregator/tt-news-rss-feeds.py
 
       - name: Commit and push new CSV
         run: |
