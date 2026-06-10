@@ -1,28 +1,6 @@
 import streamlit as st
 from sodium_reveal import calculate_paho_warnings
-from manual_input_form import show_manual_entry_form
 
-def handle_global_failure(error_message, button_key_suffix):
-    error_placeholder = st.empty()
-    choice_placeholder = st.empty()
-    button_placeholder = st.empty()
-
-    error_placeholder.error(error_message)
-    choice_placeholder.error("Product could not be identified.\
-                              Do you want to manually enter nutritional data?")
-    
-    with button_placeholder.container():
-        col1, col2, col3 = st.columns([4,1,1])
-        with col2:
-            if st.button("Yes", key=f"yes_{button_key_suffix}"):
-                error_placeholder.empty()
-                choice_placeholder.empty()
-                # Open manual entry form
-                show_manual_entry_form(st.session_state.last_barcode)
-        with col3:
-            if st.button("No", key=f"no_{button_key_suffix}"):
-                error_placeholder.empty()
-                choice_placeholder.empty()
 
 def display_sodium_results(item):
     data = item["data"]
@@ -102,7 +80,7 @@ def display_sodium_results(item):
     cols[0].metric("Sodium", f"{data.get('sodium_mg', 'N/A')} mg")
     cols[1].metric("Calories", f"{data.get('calories', 'N/A')} kcal")
 
-#@st.dialog("Input Nutrition Data?")
+
 def change_data_choice(question):
     st.markdown(question)
     col_1, col_2, col_3 = st.columns([3, 1, 1])

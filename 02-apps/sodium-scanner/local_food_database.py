@@ -17,11 +17,19 @@ def check_cloud_database(barcode):
     try:
         df = conn.read(ttl="5m", dtype={"barcode": str})
         # Convert barcode to string and strip spaces to ensure a match
-        barcode_str = "BC-" + str(barcode).strip()
+        barcode_str = "BC-" + str(barcode).replace("BC-", "").strip().upper()
         #print(df['barcode'])
-        df['barcode'] = df['barcode'].astype(str).str.strip()
-        result = df[df['barcode'] == barcode_str] # .astype(str).str.replace("'", "", regex=False)
+
+        # 3. Aggressively clean the DataFrame column temporarily for matching
+        # This converts to string, strips hidden spaces, and forces uppercase
+        df_cleaned_barcodes = df['barcode'].astype(str).str.strip().str.upper()
+
+        #df['barcode'] = df['barcode'].astype(str).str.strip()
+        #result = df[df['barcode'] == barcode_str] # .astype(str).str.replace("'", "", regex=False)
         
+        # 4. Perform the match against the cleaned column
+        result = df[df_cleaned_barcodes == barcode_str]
+
         if not result.empty:
             # Return the first match as a dictionary
             #print("Full")

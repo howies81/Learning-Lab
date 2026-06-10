@@ -4,7 +4,6 @@ import urllib.parse
 from web_app_barcode_scanner import get_barcode_from_scanner
 from ui_helper_functions import  display_sodium_results
 from local_food_database import check_cloud_database, save_new_product_to_cloud
-from streamlit_autorefresh import st_autorefresh
 from global_food_database import check_global_database
 from manual_input_form import show_manual_entry_form
 
@@ -35,22 +34,37 @@ if "diagnostic_error_msg" not in st.session_state:
 
 @st.fragment(run_every=0.5)
 def render_scanner_view():
-    st.info("Do you prefer to enter the barcode manually?")
-    manual_barcode = st.text_input("Barcode Input", max_chars=13)
+    manual_container = st.container()
+    camera_container = st.container()
 
-    if manual_barcode:
-        st.session_state.target_barcode = manual_barcode.strip()
-        st.session_state.current_screen = "PROCESS"
-        st.rerun()
+    with manual_container:
+        st.info("Do you prefer to enter the barcode manually?")
 
-    if st.session_state.target_barcode is None and not manual_barcode:
-        st.info("Looking for a barcode... (Hold it steady!)")
-        barcode_result = get_barcode_from_scanner()
-        
-        if barcode_result:
-            st.session_state.target_barcode = barcode_result
-            st.session_state.current_screen = "PROCESS"
-            st.rerun()
+        with st.form("manual_barcode_form", clear_on_submit=True):
+            manual_barcode = st.text_input("Barcode Input", max_chars=13, placeholder="0123456789101")
+            submitted = st.form_submit_button("🔍 Search for Barcode", use_container_width=True)
+
+            if submitted:
+                cleaned_barcode = manual_barcode.strip()
+                # Enforce valid barcode structures (most retail barcodes are between 8 and 13 digits)
+                if cleaned_barcode.isnumeric() and (8 <= len(cleaned_barcode) <= 13):
+                    st.session_state.target_barcode = cleaned_barcode
+                    st.session_state.current_screen = "PROCESS"
+                    st.rerun(scope="app") # Force global parent update to move to process screen
+                else:
+                    st.error("⚠️ Invalid barcode format. Please enter a valid 8 to 13 digit number.")
+
+            
+    with camera_container:
+        st.write("---")
+        if st.session_state.target_barcode is None:
+            st.info("📷 Looking for a barcode... (Hold packaging steady!)")
+            barcode_result = get_barcode_from_scanner()
+            
+            if barcode_result:
+                st.session_state.target_barcode = str(barcode_result).strip()
+                st.session_state.current_screen = "PROCESS"
+                st.rerun(scope="app")
 # =====================================================================
 # STATE A: LIVE CAMERA SCANNING VIEW
 # =====================================================================
@@ -103,7 +117,7 @@ elif st.session_state.current_screen == "PROCESS":
 
             # EMAIL SUPPORT INTEGRATION ADD-ON: 
             # Pre-builds an automatic email report link for the local connection error
-            support_email = "your-admin-email@gmail.com"
+            support_email = st.secrets["email"]["admin"]
             sub = urllib.parse.quote("ALERT: Local Database Access Failure")
             msg = urllib.parse.quote(f"System failed to check local database for barcode: {st.session_state.target_barcode}")
             st.markdown(f'<a href="mailto:{support_email}?subject={sub}&body={msg}">📧 Click here to report this database dropout to Admin</a>', unsafe_allow_html=True)
@@ -197,14 +211,8 @@ elif st.session_state.current_screen == "MANUAL_FORM":
             st.session_state.diagnostic_error_msg = ""
             st.rerun()
 
-    form_submit_flag = show_manual_entry_form(st.session_state.target_barcode)
-    if form_submit_flag is True:
-       st.success("Data saved successfully!")
-       time.sleep(1.5)
-       st.session_state.current_screen = "SCANNING"
-       st.session_state.target_barcode = None
-       st.session_state.diagnostic_error_msg = ""
-       st.rerun()
+    show_manual_entry_form(st.session_state.target_barcode)
+    
     
 elif st.session_state.current_screen == "SHOW_RESULTS":
     display_sodium_results(st.session_state.loaded_product_data)

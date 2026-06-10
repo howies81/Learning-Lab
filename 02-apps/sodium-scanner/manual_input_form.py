@@ -53,7 +53,12 @@ def show_manual_entry_form(barcode):
                 }
                 db_success = save_to_pending(new_entry)
                 if db_success:
-                    return True
+                    # Modify state directly so the change survives the rerun loop
+                    st.session_state.current_screen = "SCANNING"
+                    st.session_state.target_barcode = None
+                    st.session_state.diagnostic_error_msg = ""
+                    st.toast("🎉 Product successfully submitted to Pending database!")
+                    st.rerun()
                 else:
                     # Connection failed! Show error on screen.
                     # Because clear_on_submit=False, their typed text stays 
@@ -61,9 +66,9 @@ def show_manual_entry_form(barcode):
 
                     st.error("📡 Cloud Database Connection Timeout. Please check your internet\
                               connection and try clicking Submit again.")
-                    return False  # Keeps the user locked on the manual form screen
+                    #return False  # Keeps the user locked on the manual form screen
                 
             else:
                 st.markdown("Please provide both a Brand and Product Name so data can be verified.")
-                return False
+                #return False
                 
